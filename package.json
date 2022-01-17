@@ -3,13 +3,14 @@
   "author": "stagas",
   "short": "stagas/super-impose",
   "description": "custom element that super imposes one child over another to the same scroll position",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://git@github.com:stagas/super-impose.git"
   },
   "keywords": [
+    "web-component",
     "custom-element",
     "super-impose"
   ],
