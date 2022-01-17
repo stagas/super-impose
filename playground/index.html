@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Playground</title>
+    <style>
+      wrap-element {
+        display: block;
+        width: 100px;
+        height: 100px;
+      }
+      wrap-element::part(leader) {
+        overflow: scroll;
+        resize: both;
+      }
+    </style>
+  </head>
+  <body>
+    <pre>
+    one
+    two
+    three
+    </pre>
+    <div style="padding: 20px; border: 1px solid #000; width: 100px; height: 100px; overflow: hidden; resize: both">
+      <super-impose>
+        <textarea wrap="off">
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+some content wide enough to scroll
+        </textarea>
+        <pre slot="follower" style="white-space: pre">
+other content
+other content
+other content
+other content
+other content
+other content
+other content
+        </pre>
+      </super-impose>
+    </div>
+
+    <script src="./app.ts" type="module"></script>
+  </body>
+</html>
