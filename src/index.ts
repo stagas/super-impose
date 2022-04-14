@@ -1,106 +1,105 @@
-const html = /*html*/ `<style>
-  :host {
-    position: relative;
-    overflow: hidden;
-    display: inline-flex;
-    resize: both;
-    width: 100%;
-    height: 100%;
-  }
+import { events, mixter, on, onSlotChange, props, shadow, state } from 'mixter'
 
-  #leader {
-    position: absolute;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+const style = /*css*/ `
+:host {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+}
 
-  #leader::slotted(:first-child) {
-    display: inline-flex;
-    width: 100%;
-    height: 100%;
-    overflow: scroll;
-    resize: none !important;
-    margin: 0;
-    box-sizing: border-box;
-  }
+[part='scroller'] {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
 
-  [name="follower"] {
-    left: 0;
-    top: 0;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+[name='leader'] {
+  box-sizing: border-box;
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+}
 
-  [name="follower"] {
-    display: contents;
-  }
+[name='leader']::slotted(:first-child) {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  resize: none;
+  overflow: scroll;
+}
 
-  [part="scroll"] {
-    pointer-events: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-</style><slot id="leader"></slot><div part="scroll"><slot name="follower"></slot></div>`
+[name='follower'] {
+  display: contents;
+}`
 
 /**
- * Super imposes one child over another.
+ * Super imposes one child (`follower`) contents over another
+ * at the same scroll position determined by the `leader`.
  *
  * ```js
  * import { SuperImposeElement } from 'super-impose'
  * customElements.define('super-impose', SuperImposeElement)
  * ```
  *
+ * --
+ *
  * ```html
  * <super-impose>
- *   <div></div> <!-- leader -->
+ *   <div slot="leader"></div>
  *   <div slot="follower"></div>
  * </super-impose>
  * ```
  */
-export class SuperImposeElement extends HTMLElement {
-  leaderSlot: HTMLSlotElement
-  followerSlot: HTMLSlotElement
-  scrollEl: HTMLDivElement
+export class SuperImposeElement extends mixter(
+  HTMLElement,
+  shadow(
+    /*html*/ `<style>${style}</style><slot name="leader"></slot><div part="scroller"><slot name="follower"></slot></div>`
+  ),
+  events<{ scroll: Event }>(),
+  props(
+    class {
+      scrollLeft = 0
+      scrollTop = 0
+      scroller?: HTMLDivElement
+      leader?: Element
+      onScroll?: (e: Event) => void
+    }
+  ),
+  state<SuperImposeElement>(({ $, effect, reduce }) => {
+    $.scroller = reduce<HTMLDivElement>(({ root }) => root.querySelector('[part=scroller]')!)
 
-  #leaderNode?: HTMLElement
+    effect(({ root }) =>
+      onSlotChange(root as ShadowRoot, ({ firstChild }) => {
+        $.leader = firstChild
+      })
+    )
 
-  constructor() {
-    super()
-
-    this.attachShadow({ mode: 'open' })
-    this.shadowRoot!.innerHTML = html
-    this.leaderSlot = this.shadowRoot!.querySelector('#leader')!
-    this.followerSlot = this.shadowRoot!.querySelector('[name="follower"]')!
-    this.scrollEl = this.shadowRoot!.querySelector('[part="scroll"]')!
-
-    this.shadowRoot!.addEventListener('slotchange', () => {
-      const nodes = this.leaderSlot.assignedNodes().filter(x => x.nodeType !== document.TEXT_NODE)
-      const leaderNode = nodes[0] as HTMLElement
-      if (leaderNode) {
-        this.#leaderNode = leaderNode
-        this.#leaderNode.addEventListener('scroll', () => {
-          Object.assign(this.scrollEl.style, {
-            left: -this.#leaderNode!.scrollLeft + 'px',
-            top: -this.#leaderNode!.scrollTop + 'px',
-          })
-          this.dispatchEvent(new CustomEvent('scroll', { bubbles: true }))
+    $.onScroll = reduce(({ host }) => ((e: Event) => {
+      const el = e.currentTarget as Element
+      if (el) {
+        Object.assign($, {
+          scrollLeft: el.scrollLeft,
+          scrollTop: el.scrollTop,
         })
+        host.dispatchEvent(new Event('scroll', { bubbles: true }))
       }
+    }))
+
+    effect(({ leader, onScroll }) => on()(leader, 'scroll', onScroll))
+
+    effect(({ scroller, scrollLeft, scrollTop }) => {
+      Object.assign(scroller.style, {
+        left: -scrollLeft + 'px',
+        top: -scrollTop + 'px',
+      })
     })
-  }
-
-  get scrollLeft() {
-    return this.#leaderNode!.scrollLeft
-  }
-
-  get scrollTop() {
-    return this.#leaderNode!.scrollTop
-  }
-}
-
-export default SuperImposeElement
+  })
+) {}

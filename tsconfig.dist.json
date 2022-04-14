@@ -1,12 +1,21 @@
 {
   "extends": "./tsconfig.json",
+  "include": [
+    "src"
+  ],
   "exclude": [
-    "playground",
-    "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "dist",
+    "example",
+    "node_modules",
+    "test",
+    "types"
   ],
   "compilerOptions": {
-    "isolatedModules": true,
-    "inlineSources": true
+    "jsx": "react-jsx",
+    "types": [
+      "./types/globals",
+      "./types/modules",
+      "node"
+    ]
   }
 }
