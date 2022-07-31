@@ -1,22 +1,23 @@
-import { events, mixter, on, onSlotChange, props, shadow, state } from 'mixter'
+import $ from 'sigl'
 
 const style = /*css*/ `
 :host {
+  contain: size style layout paint;
   position: relative;
   overflow: hidden;
-  display: inline-flex;
+  /* display: inline-flex; */
   width: 100%;
   height: 100%;
 }
 
-[part='scroller'] {
+[part=scroller] {
   pointer-events: none;
   position: absolute;
   top: 0;
   left: 0;
 }
 
-[name='leader'] {
+[name=leader] {
   box-sizing: border-box;
   position: absolute;
   z-index: 1;
@@ -26,19 +27,26 @@ const style = /*css*/ `
   padding: 0;
 }
 
-[name='leader']::slotted(:first-child) {
+[name=leader]::slotted(:first-child) {
   box-sizing: border-box;
   display: inline-flex;
   width: 100%;
   height: 100%;
   margin: 0;
   resize: none;
+  overflow: hidden;
+  touch-action: none;
+}
+
+[name=leader]:hover::slotted(:first-child) {
   overflow: scroll;
 }
 
-[name='follower'] {
+[name=follower] {
   display: contents;
 }`
+
+export interface SuperImposeElement extends $.Element<SuperImposeElement> {}
 
 /**
  * Super imposes one child (`follower`) contents over another
@@ -58,48 +66,59 @@ const style = /*css*/ `
  * </super-impose>
  * ```
  */
-export class SuperImposeElement extends mixter(
-  HTMLElement,
-  shadow(
+@$.element()
+export class SuperImposeElement extends HTMLElement {
+  root = $(this).shadow(
     /*html*/ `<style>${style}</style><slot name="leader"></slot><div part="scroller"><slot name="follower"></slot></div>`
-  ),
-  events<{ scroll: Event }>(),
-  props(
-    class {
-      scrollLeft = 0
-      scrollTop = 0
-      scroller?: HTMLDivElement
-      leader?: Element
-      onScroll?: (e: Event) => void
-    }
-  ),
-  state<SuperImposeElement>(({ $, effect, reduce }) => {
-    $.scroller = reduce<HTMLDivElement>(({ root }) => root.querySelector('[part=scroller]')!)
+  )
 
-    effect(({ root }) =>
-      onSlotChange(root as ShadowRoot, ({ firstChild }) => {
-        $.leader = firstChild
+  scrollLeft = 0
+  scrollTop = 0
+  scroller?: HTMLDivElement
+  leader?: HTMLElement
+
+  onScroll = $(this).reduce(({ $, host, leader }) =>
+    () => {
+      $.mutate(() => {
+        Object.assign($, {
+          scrollLeft: leader.scrollLeft,
+          scrollTop: leader.scrollTop,
+        })
+      })
+      $.dispatch.composed(host, 'scroll')
+    }
+  )
+
+  rescroll = $(this).callback(({ leader, scrollLeft, scrollTop }) =>
+    () => {
+      Object.assign(leader!, {
+        scrollLeft,
+        scrollTop,
+      })
+    }
+  )
+
+  mounted($: SuperImposeElement['$']) {
+    $.scroller = $.query<HTMLDivElement>(/*css*/ `[part=scroller]`)
+
+    $.effect(({ root }) =>
+      $.onSlotChange(root, ({ firstChild }) => {
+        $.leader = firstChild as HTMLElement
       })
     )
 
-    $.onScroll = reduce(({ host }) => ((e: Event) => {
-      const el = e.currentTarget as Element
-      if (el) {
-        Object.assign($, {
-          scrollLeft: el.scrollLeft,
-          scrollTop: el.scrollTop,
-        })
-        host.dispatchEvent(new Event('scroll', { bubbles: true }))
-      }
-    }))
+    $.effect(({ leader, onScroll, rescroll }) =>
+      $.chain(
+        $.on(leader).scroll.passive.raf(onScroll),
+        $.observe.resize(leader, rescroll)
+      )
+    )
 
-    effect(({ leader, onScroll }) => on()(leader, 'scroll', onScroll))
-
-    effect(({ scroller, scrollLeft, scrollTop }) => {
+    $.effect(({ scroller, scrollLeft, scrollTop }) => {
       Object.assign(scroller.style, {
         left: -scrollLeft + 'px',
         top: -scrollTop + 'px',
       })
     })
-  })
-) {}
+  }
+}
