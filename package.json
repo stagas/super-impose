@@ -3,7 +3,7 @@
   "author": "stagas",
   "short": "stagas/super-impose",
   "description": "Web Component that super imposes one child over another to the same scroll position",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -64,7 +64,7 @@
     "@typescript-eslint/eslint-plugin": "5.30.7",
     "@typescript-eslint/parser": "5.30.7",
     "bunzee": "^1.0.0",
-    "dokio": "^0.0.1",
+    "dokio": "^0.0.2",
     "dprint": "0.30.3",
     "eslint": "8.20.0",
     "eslint-config-html-jsx": "^1.0.0",
@@ -81,7 +81,7 @@
     "vite-open": "^2.4.0"
   },
   "dependencies": {
-    "sigl": "file:../sigl"
+    "sigl": "^0.0.5"
   },
   "trustedDependencies": [
     "@stagas/chalk",
